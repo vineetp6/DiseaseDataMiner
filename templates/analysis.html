@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+
+{% block title %}Analyze Compound - Drug Discovery Platform{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('compound_details', id=compound.id) }}">{{ compound.name }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Analyze</li>
+            </ol>
+        </nav>
+        
+        <h1>Analyze Compound: {{ compound.name }}</h1>
+        <p class="text-muted">
+            Run AI-driven analysis to predict properties and effectiveness for neglected disease targets.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Compound</h5>
+            </div>
+            <div class="card-body text-center">
+                <div id="structure-display">
+                    <!-- Structure will be rendered here -->
+                </div>
+                <div class="mt-3">
+                    <p class="mb-1"><strong>Name:</strong> {{ compound.name }}</p>
+                    <p class="mb-1"><strong>Formula:</strong> {{ compound.molecular_formula }}</p>
+                    <p class="mb-1"><strong>SMILES:</strong></p>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control form-control-sm" value="{{ compound.smiles }}" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ compound.smiles }}')">
+                            <i data-feather="copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Analysis Options</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('analyze_compound', id=compound.id) }}" method="post">
+                    <div class="mb-3">
+                        <label for="analysis-type" class="form-label">Analysis Type</label>
+                        <select class="form-select" id="analysis-type" name="analysis_type" required>
+                            <option value="" selected disabled>Select analysis type...</option>
+                            <option value="properties">Calculate Molecular Properties</option>
+                            <option value="binding">Predict Binding Affinity</option>
+                            <option value="admet">Predict ADMET Properties</option>
+                        </select>
+                    </div>
+                    
+                    <div id="binding-options" class="mb-3 d-none">
+                        <label for="target-id" class="form-label">Select Target</label>
+                        <select class="form-select" id="target-id" name="target_id">
+                            <option value="" selected disabled>Select a target...</option>
+                            {% for target in targets %}
+                            <option value="{{ target.id }}">{{ target.name }} ({{ target.organism }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Target for binding affinity prediction.
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i data-feather="activity"></i> Run Analysis
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if results %}
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Analysis Results</h5>
+            </div>
+            <div class="card-body">
+                {% if analysis_type == 'properties' %}
+                <h4>Molecular Properties</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Molecular Weight</th>
+                                    <td>{{ results.molecular_weight }} g/mol</td>
+                                </tr>
+                                <tr>
+                                    <th>LogP</th>
+                                    <td>{{ results.logp }}</td>
+                                </tr>
+                                <tr>
+                                    <th>H-Bond Acceptors</th>
+                                    <td>{{ results.hba }}</td>
+                                </tr>
+                                <tr>
+                                    <th>H-Bond Donors</th>
+                                    <td>{{ results.hbd }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Topological PSA</th>
+                                    <td>{{ results.tpsa }} Å²</td>
+                                </tr>
+                                <tr>
+                                    <th>QED (Drug-likeness)</th>
+                                    <td>{{ results.qed }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Number of Rings</th>
+                                    <td>{{ results.num_rings }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Rotatable Bonds</th>
+                                    <td>{{ results.rotatable_bonds }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <strong>Lipinski's Rule of Five:</strong>
+                    <ul class="mb-0">
+                        <li>Molecular weight < 500: {% if results.molecular_weight <= 500 %}✓{% else %}✗{% endif %}</li>
+                        <li>LogP < 5: {% if results.logp <= 5 %}✓{% else %}✗{% endif %}</li>
+                        <li>H-Bond donors < 5: {% if results.hbd <= 5 %}✓{% else %}✗{% endif %}</li>
+                        <li>H-Bond acceptors < 10: {% if results.hba <= 10 %}✓{% else %}✗{% endif %}</li>
+                    </ul>
+                </div>
+                
+                {% elif analysis_type == 'binding' %}
+                <h4>Binding Affinity Prediction</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <h5>Binding Score</h5>
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar {% if results.binding_score > 0.7 %}bg-success{% elif results.binding_score > 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ (results.binding_score * 100)|int }}%;" 
+                                    aria-valuenow="{{ (results.binding_score * 100)|int }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                    {{ (results.binding_score * 100)|int }}%
+                                </div>
+                            </div>
+                            <p class="mt-2">The binding score of {{ results.binding_score }} indicates 
+                                {% if results.binding_score > 0.7 %}
+                                strong potential binding
+                                {% elif results.binding_score > 0.4 %}
+                                moderate potential binding
+                                {% else %}
+                                weak potential binding
+                                {% endif %}
+                                to the target.
+                            </p>
+                        </div>
+                        
+                        <div class="alert alert-secondary">
+                            <p class="mb-0"><strong>Note:</strong> This is a computational prediction and should be validated through experimental methods. Binding scores above 0.7 suggest candidates for further investigation.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="binding-visualization" style="height: 300px;">
+                            <!-- Visualization will be added via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                {% elif analysis_type == 'admet' %}
+                <h4>ADMET Properties Prediction</h4>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div id="admet-radar" style="height: 350px;">
+                            <!-- ADMET radar chart will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Absorption</th>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar {% if results.absorption > 0.7 %}bg-success{% elif results.absorption > 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ (results.absorption * 100)|int }}%;" 
+                                                aria-valuenow="{{ (results.absorption * 100)|int }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ (results.absorption * 100)|int }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Solubility</th>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar {% if results.solubility > 0.7 %}bg-success{% elif results.solubility > 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ (results.solubility * 100)|int }}%;" 
+                                                aria-valuenow="{{ (results.solubility * 100)|int }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ (results.solubility * 100)|int }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Toxicity</th>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar {% if results.toxicity < 0.3 %}bg-success{% elif results.toxicity < 0.6 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ (results.toxicity * 100)|int }}%;" 
+                                                aria-valuenow="{{ (results.toxicity * 100)|int }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ (results.toxicity * 100)|int }}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Lower is better</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>BBB Permeability</th>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-info" 
+                                                role="progressbar" 
+                                                style="width: {{ (results.blood_brain_barrier * 100)|int }}%;" 
+                                                aria-valuenow="{{ (results.blood_brain_barrier * 100)|int }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ (results.blood_brain_barrier * 100)|int }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <h5>Interpretation</h5>
+                    <ul>
+                        <li><strong>Absorption:</strong> 
+                            {% if results.absorption > 0.7 %}
+                            Good oral absorption likely.
+                            {% elif results.absorption > 0.4 %}
+                            Moderate oral absorption possible.
+                            {% else %}
+                            Poor oral absorption predicted.
+                            {% endif %}
+                        </li>
+                        <li><strong>Toxicity:</strong> 
+                            {% if results.toxicity < 0.3 %}
+                            Low toxicity risk predicted.
+                            {% elif results.toxicity < 0.6 %}
+                            Moderate toxicity risk.
+                            {% else %}
+                            Higher toxicity risk predicted.
+                            {% endif %}
+                        </li>
+                        <li><strong>Blood-Brain Barrier:</strong> 
+                            {% if results.blood_brain_barrier > 0.7 %}
+                            Likely to cross the blood-brain barrier.
+                            {% elif results.blood_brain_barrier > 0.3 %}
+                            May cross the blood-brain barrier.
+                            {% else %}
+                            Unlikely to cross the blood-brain barrier.
+                            {% endif %}
+                        </li>
+                        <li><strong>Bioavailability:</strong> 
+                            {% if results.bioavailability > 0.7 %}
+                            Good bioavailability predicted.
+                            {% elif results.bioavailability > 0.4 %}
+                            Moderate bioavailability possible.
+                            {% else %}
+                            Poor bioavailability predicted.
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('compound_details', id=compound.id) }}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left"></i> Back to Compound
+                    </a>
+                    <button class="btn btn-primary" onclick="runAnotherAnalysis()">
+                        <i data-feather="refresh-cw"></i> Run Another Analysis
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Analysis Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h4 class="alert-heading"><i data-feather="info"></i> About Analysis Options</h4>
+                    <p>
+                        Select an analysis type from the options panel to analyze this compound. Three types of analysis are available:
+                    </p>
+                    <hr>
+                    <h5>Molecular Properties</h5>
+                    <p>
+                        Calculates basic molecular properties such as molecular weight, LogP, hydrogen bond donors/acceptors, 
+                        and other physicochemical properties important for drug discovery.
+                    </p>
+                    
+                    <h5>Binding Affinity Prediction</h5>
+                    <p>
+                        Uses machine learning to predict the binding affinity of the compound to specific disease targets.
+                        This helps identify compounds with potential therapeutic activity against neglected disease targets.
+                    </p>
+                    
+                    <h5>ADMET Properties Prediction</h5>
+                    <p>
+                        Predicts Absorption, Distribution, Metabolism, Excretion, and Toxicity properties of the compound.
+                        These properties are crucial for determining drug-likeness and potential issues in drug development.
+                    </p>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Dengue_virus_transmembrane.svg/640px-Dengue_virus_transmembrane.svg.png" alt="Drug discovery illustration" class="img-fluid rounded" style="max-height: 300px;">
+                    <p class="text-muted mt-2">
+                        Illustration of a viral protein target (Source: Wikimedia Commons)
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/molecular_viewer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/data_visualization.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Display molecular structure
+        const smiles = '{{ compound.smiles }}';
+        const structureElement = document.getElementById('structure-display');
+        drawStructureThumbnail(structureElement, smiles, 300, 200);
+        
+        // Handle analysis type selector
+        const analysisTypeSelect = document.getElementById('analysis-type');
+        const bindingOptions = document.getElementById('binding-options');
+        
+        analysisTypeSelect.addEventListener('change', function() {
+            if (this.value === 'binding') {
+                bindingOptions.classList.remove('d-none');
+            } else {
+                bindingOptions.classList.add('d-none');
+            }
+        });
+        
+        // Copy to clipboard function
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Copied to clipboard!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        };
+        
+        // Function to reset form for another analysis
+        window.runAnotherAnalysis = function() {
+            // Scroll to the form
+            document.getElementById('analysis-type').scrollIntoView({
+                behavior: 'smooth'
+            });
+            
+            // Reset the form
+            analysisTypeSelect.value = '';
+            bindingOptions.classList.add('d-none');
+        };
+        
+        {% if results %}
+            {% if analysis_type == 'binding' %}
+                // Create binding visualization if results are available
+                createBindingVisualization('binding-visualization', {{ results.binding_score }});
+            {% endif %}
+            
+            {% if analysis_type == 'admet' %}
+                // Create ADMET radar chart if results are available
+                createAdmetRadarChart('admet-radar', {{ results|tojson }});
+            {% endif %}
+        {% endif %}
+    });
+</script>
+{% endblock %}

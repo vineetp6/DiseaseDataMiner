@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Page Not Found - Drug Discovery Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card text-center mb-4">
+            <div class="card-body py-5">
+                <div class="display-1 text-muted mb-4">
+                    <i data-feather="search" class="mb-3" stroke-width="1" width="80" height="80"></i>
+                    <h1>404</h1>
+                </div>
+                <h1 class="h3 mb-4">Page Not Found</h1>
+                <p class="text-muted mb-4">
+                    The page you are looking for might have been removed, had its name changed,
+                    or is temporarily unavailable.
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i data-feather="home" class="me-1"></i> Go to Home
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-1"></i> Go Back
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">You might be looking for</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('index') }}" class="list-group-item list-group-item-action">
+                        <i data-feather="home" class="me-2"></i> Home Dashboard
+                    </a>
+                    <a href="{{ url_for('search') }}" class="list-group-item list-group-item-action">
+                        <i data-feather="search" class="me-2"></i> Search Compounds
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

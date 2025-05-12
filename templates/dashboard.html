@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Drug Discovery Platform{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>Interactive Dashboard</h1>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics Row -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Compounds</h6>
+                        <h2 class="mb-0">{{ compound_count }}</h2>
+                    </div>
+                    <i data-feather="flask" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Diseases</h6>
+                        <h2 class="mb-0">{{ disease_count }}</h2>
+                    </div>
+                    <i data-feather="heart" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Targets</h6>
+                        <h2 class="mb-0">{{ target_count }}</h2>
+                    </div>
+                    <i data-feather="target" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Analyses</h6>
+                        <h2 class="mb-0">{{ analysis_count }}</h2>
+                    </div>
+                    <i data-feather="activity" style="width: 48px; height: 48px; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Visualizations -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Disease Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="disease-distribution-chart" style="height: 350px;"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Molecular Weight Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="mw-distribution-chart" style="height: 350px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Analyses -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Recent Analyses</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Compound</th>
+                                <th>Analysis Type</th>
+                                <th>Results</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for analysis in recent_analyses %}
+                            <tr>
+                                <td>{{ analysis.date }}</td>
+                                <td>
+                                    <a href="{{ url_for('compound_details', id=analysis.compound_id) }}">
+                                        {{ analysis.compound_name }}
+                                    </a>
+                                </td>
+                                <td>{{ analysis.type }}</td>
+                                <td>
+                                    {% if analysis.type == 'Binding Prediction' and analysis.binding_score %}
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if analysis.binding_score > 0.7 %}bg-success{% elif analysis.binding_score > 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                            role="progressbar" 
+                                            style="width: {{ (analysis.binding_score * 100)|int }}%;" 
+                                            aria-valuenow="{{ (analysis.binding_score * 100)|int }}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                            {{ (analysis.binding_score * 100)|int }}%
+                                        </div>
+                                    </div>
+                                    <small>Target: {{ analysis.target_name }}</small>
+                                    {% else %}
+                                    <span class="text-muted">Multiple results</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('compound_details', id=analysis.compound_id) }}" class="btn btn-sm btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fixed colors for charts that work with dark themes
+        const chartColors = [
+            '#4f6cff', '#7db1ff', '#48c9b0', '#9b59b6', 
+            '#f1c40f', '#e74c3c', '#3498db', '#2ecc71',
+            '#e67e22', '#34495e', '#1abc9c', '#f39c12'
+        ];
+        
+        // Disease Distribution Chart
+        const diseaseChartElement = document.getElementById('disease-distribution-chart');
+        
+        // Check if we have disease data to display
+        const diseaseLabels = [
+            {% for disease, count in disease_compounds %}
+                '{{ disease if disease else "Unknown" }}',
+            {% endfor %}
+        ];
+        
+        const diseaseData = [
+            {% for disease, count in disease_compounds %}
+                {{ count }},
+            {% endfor %}
+        ];
+        
+        if(diseaseLabels.length > 0 && diseaseData.length > 0) {
+            const diseaseCtx = diseaseChartElement.getContext('2d');
+            new Chart(diseaseCtx, {
+                type: 'pie',
+                data: {
+                    labels: diseaseLabels,
+                    datasets: [{
+                        data: diseaseData,
+                        backgroundColor: chartColors.slice(0, diseaseLabels.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#fff',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Compounds by Disease Target',
+                            color: '#fff',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            // If no data, display fallback content
+            const container = diseaseChartElement.parentNode;
+            container.removeChild(diseaseChartElement);
+            const fallbackEl = document.createElement('div');
+            fallbackEl.className = 'alert alert-info text-center my-5';
+            fallbackEl.innerHTML = 'No disease distribution data available';
+            container.appendChild(fallbackEl);
+        }
+        
+        // Molecular Weight Distribution Chart
+        const mwChartElement = document.getElementById('mw-distribution-chart');
+        
+        // Check if we have MW data to display
+        const mwLabels = [
+            {% for item in mw_distribution %}
+                '{{ item.label }}',
+            {% endfor %}
+        ];
+        
+        const mwData = [
+            {% for item in mw_distribution %}
+                {{ item.count }},
+            {% endfor %}
+        ];
+        
+        if(mwLabels.length > 0 && mwData.length > 0) {
+            const mwCtx = mwChartElement.getContext('2d');
+            new Chart(mwCtx, {
+                type: 'bar',
+                data: {
+                    labels: mwLabels,
+                    datasets: [{
+                        label: 'Number of Compounds',
+                        data: mwData,
+                        backgroundColor: chartColors[0],
+                        borderColor: chartColors[0],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#fff',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#fff',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#fff',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Compound Distribution by Molecular Weight (g/mol)',
+                            color: '#fff',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            // If no data, display fallback content
+            const container = mwChartElement.parentNode;
+            container.removeChild(mwChartElement);
+            const fallbackEl = document.createElement('div');
+            fallbackEl.className = 'alert alert-info text-center my-5';
+            fallbackEl.innerHTML = 'No molecular weight distribution data available';
+            container.appendChild(fallbackEl);
+        }
+    });
+</script>
+{% endblock %}

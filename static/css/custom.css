@@ -1,0 +1,218 @@
+/* Custom styles for Drug Discovery Platform */
+
+/* General styles */
+body {
+    font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    padding-bottom: 60px; /* Extra padding for the fixed footer */
+}
+
+.bg-dark-subtle {
+    background-color: rgba(30, 41, 59, 0.4) !important;
+}
+
+/* Notification for copying to clipboard */
+.copy-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--bs-success);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    z-index: 1050;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    opacity: 1;
+    transition: opacity 0.5s;
+}
+
+.copy-notification.fade-out {
+    opacity: 0;
+}
+
+/* Molecular structure visualization */
+.structure-thumbnail {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+#structure-2d, #structure-3d {
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.15);
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+#structure-3d svg {
+    background-color: #000;
+    border-radius: 4px;
+}
+
+/* Dashboard cards */
+.card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    font-weight: 500;
+}
+
+/* Analysis result cards */
+.analysis-result-card {
+    margin-bottom: 20px;
+}
+
+.analysis-result-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Progress bars */
+.progress {
+    height: 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+/* Progress bar labels */
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+}
+
+/* Property badges */
+.property-badge {
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-weight: normal;
+}
+
+/* Search result highlighting */
+.highlight-match {
+    background-color: rgba(255, 193, 7, 0.2);
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
+/* Mol display container */
+.mol-container {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Formula styling */
+.formula {
+    font-family: 'Courier New', monospace;
+}
+
+.formula sub {
+    font-size: 0.8em;
+    position: relative;
+    bottom: -0.3em;
+}
+
+/* Data tables */
+.table-compounds th {
+    position: sticky;
+    top: 0;
+    background-color: var(--bs-dark);
+    z-index: 10;
+}
+
+/* Molecule property labels */
+.property-label {
+    display: inline-block;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: var(--bs-primary);
+    color: white;
+    text-align: center;
+    line-height: 35px;
+    margin-right: 10px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+/* Property value ranges */
+.range-slider {
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* Analysis type badge styling */
+.analysis-type-badge {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    background-color: var(--bs-secondary);
+}
+
+.analysis-type-binding {
+    background-color: var(--bs-primary);
+}
+
+.analysis-type-admet {
+    background-color: var(--bs-success);
+}
+
+.analysis-type-properties {
+    background-color: var(--bs-info);
+}
+
+/* SVG structure styles */
+svg text {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-title {
+        font-size: 1.1rem;
+    }
+    
+    .mol-container {
+        height: 250px !important; /* Override inline styles for mobile */
+    }
+    
+    .table-responsive {
+        max-height: 400px;
+    }
+}
+
+/* Visual styling for rule of 5 indicators */
+.rule-indicator {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.rule-indicator-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.rule-passed {
+    background-color: var(--bs-success);
+}
+
+.rule-failed {
+    background-color: var(--bs-danger);
+}

@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ compound.name }} - Drug Discovery Platform{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('search') }}">Compounds</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ compound.name }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>{{ compound.name }}</h1>
+            <div>
+                <a href="{{ url_for('analyze_compound', id=compound.id) }}" class="btn btn-primary">
+                    <i data-feather="activity"></i> Analyze Compound
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Molecular Structure</h5>
+            </div>
+            <div class="card-body text-center">
+                <div id="structure-2d" class="mb-3">
+                    {{ structure_svg|safe }}
+                </div>
+                <div id="structure-3d" style="height: 300px; width: 100%; position: relative; display: none; background-color: #191c20;">
+                    <div id="mol-container" style="height: 100%; width: 100%;">
+                        <!-- Fallback to static 3D representation using 2D SVG with shadow effect for 3D feel -->
+                        <div class="p-3 text-center">
+                            <svg width="100%" height="100%" viewBox="0 0 300 300" style="filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.3));">
+                                <g transform="translate(150, 150)">
+                                    {{ structure_svg|safe }}
+                                </g>
+                            </svg>
+                            <p class="mt-3 text-light">3D structure representation</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-group mt-3" role="group">
+                    <button id="view-2d" class="btn btn-sm btn-outline-secondary active">2D View</button>
+                    <button id="view-3d" class="btn btn-sm btn-outline-secondary">3D View</button>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="input-group">
+                    <span class="input-group-text">SMILES</span>
+                    <input type="text" class="form-control form-control-sm" value="{{ compound.smiles }}" readonly>
+                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ compound.smiles }}')">
+                        <i data-feather="copy"></i>
+                    </button>
+                </div>
+                {% if compound.inchi %}
+                <div class="input-group mt-2">
+                    <span class="input-group-text">InChI</span>
+                    <input type="text" class="form-control form-control-sm" value="{{ compound.inchi }}" readonly>
+                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('{{ compound.inchi }}')">
+                        <i data-feather="copy"></i>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Compound Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Name</th>
+                                    <td>{{ compound.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Formula</th>
+                                    <td>{{ compound.molecular_formula }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Molecular Weight</th>
+                                    <td>{{ compound.molecular_weight }} g/mol</td>
+                                </tr>
+                                <tr>
+                                    <th>LogP</th>
+                                    <td>{{ compound.logp }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>H-Bond Acceptors</th>
+                                    <td>{{ compound.hba }}</td>
+                                </tr>
+                                <tr>
+                                    <th>H-Bond Donors</th>
+                                    <td>{{ compound.hbd }}</td>
+                                </tr>
+                                <tr>
+                                    <th>TPSA</th>
+                                    <td>{{ compound.tpsa }} Å²</td>
+                                </tr>
+                                <tr>
+                                    <th>Disease Target</th>
+                                    <td>{{ compound.disease_target }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if compound.description %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h5>Description</h5>
+                        <p>{{ compound.description }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h5>Lipinski's Rule of Five Analysis</h5>
+                        <div id="lipinski-chart" class="mb-3">
+                            <!-- Lipinski rule visualization will be rendered here -->
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Molecular Weight < 500
+                                <span class="badge {% if compound.molecular_weight and compound.molecular_weight <= 500 %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ compound.molecular_weight|round(2) if compound.molecular_weight else 'N/A' }}
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                LogP < 5
+                                <span class="badge {% if compound.logp and compound.logp <= 5 %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ compound.logp|round(2) if compound.logp else 'N/A' }}
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                H-Bond Donors < 5
+                                <span class="badge {% if compound.hbd and compound.hbd <= 5 %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ compound.hbd if compound.hbd else 'N/A' }}
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                H-Bond Acceptors < 10
+                                <span class="badge {% if compound.hba and compound.hba <= 10 %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ compound.hba if compound.hba else 'N/A' }}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if analyses %}
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Analysis Results</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="analysisAccordion">
+                    {% for analysis in analyses %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#analysis-{{ analysis.id }}">
+                                {{ analysis.analysis_type }} - {{ analysis.created_at.strftime('%Y-%m-%d') }}
+                            </button>
+                        </h2>
+                        <div id="analysis-{{ analysis.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" 
+                             data-bs-parent="#analysisAccordion">
+                            <div class="accordion-body">
+                                {% if analysis.analysis_type == 'Binding Prediction' and analysis.binding_affinity %}
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Target: {{ analysis.target.name if analysis.target else 'Unknown' }}</h6>
+                                        <div class="progress mb-3" style="height: 25px;">
+                                            <div class="progress-bar {% if analysis.binding_affinity > 0.7 %}bg-success{% elif analysis.binding_affinity > 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ (analysis.binding_affinity * 100)|int }}%;" 
+                                                aria-valuenow="{{ (analysis.binding_affinity * 100)|int }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ (analysis.binding_affinity * 100)|int }}%
+                                            </div>
+                                        </div>
+                                        <p>Binding Affinity Score: {{ analysis.binding_affinity }}</p>
+                                        <p class="text-muted small">Higher scores indicate stronger predicted binding to the target.</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="binding-visualization-{{ analysis.id }}" style="height: 200px;">
+                                            <!-- Visualization will be added via JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if analysis.analysis_type == 'ADMET Prediction' %}
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <h6>ADMET Properties</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <table class="table table-sm">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th>Absorption</th>
+                                                            <td>
+                                                                <div class="progress">
+                                                                    {% set absorption = 70 if analysis.results_json else 0 %}
+                                                                    <div class="progress-bar {% if absorption > 70 %}bg-success{% elif absorption > 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                                        role="progressbar" 
+                                                                        style="width: {{ absorption|int }}%;" 
+                                                                        aria-valuenow="{{ absorption|int }}" 
+                                                                        aria-valuemin="0" 
+                                                                        aria-valuemax="100">
+                                                                        {{ absorption|int }}%
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Solubility</th>
+                                                            <td>
+                                                                <div class="progress">
+                                                                    {% set solubility = analysis.solubility_score * 100 if analysis.solubility_score else 0 %}
+                                                                    <div class="progress-bar {% if solubility > 70 %}bg-success{% elif solubility > 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                                        role="progressbar" 
+                                                                        style="width: {{ solubility|int }}%;" 
+                                                                        aria-valuenow="{{ solubility|int }}" 
+                                                                        aria-valuemin="0" 
+                                                                        aria-valuemax="100">
+                                                                        {{ solubility|int }}%
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <table class="table table-sm">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th>Toxicity</th>
+                                                            <td>
+                                                                <div class="progress">
+                                                                    {% set toxicity = analysis.toxicity_score * 100 if analysis.toxicity_score else 0 %}
+                                                                    <div class="progress-bar {% if toxicity < 30 %}bg-success{% elif toxicity < 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                                        role="progressbar" 
+                                                                        style="width: {{ toxicity|int }}%;" 
+                                                                        aria-valuenow="{{ toxicity|int }}" 
+                                                                        aria-valuemin="0" 
+                                                                        aria-valuemax="100">
+                                                                        {{ toxicity|int }}%
+                                                                    </div>
+                                                                </div>
+                                                                <small class="text-muted">Lower is better</small>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>BBB Permeability</th>
+                                                            <td>
+                                                                <div class="progress">
+                                                                    {% set bbb = analysis.blood_brain_barrier * 100 if analysis.blood_brain_barrier else 0 %}
+                                                                    <div class="progress-bar bg-info" 
+                                                                        role="progressbar" 
+                                                                        style="width: {{ bbb|int }}%;" 
+                                                                        aria-valuenow="{{ bbb|int }}" 
+                                                                        aria-valuemin="0" 
+                                                                        aria-valuemax="100">
+                                                                        {{ bbb|int }}%
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="admet-radar-{{ analysis.id }}" style="height: 300px;">
+                                            <!-- ADMET radar chart will be rendered here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if analysis.results_json %}
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#json-{{ analysis.id }}">
+                                        Show Raw Results
+                                    </button>
+                                    <div class="collapse mt-2" id="json-{{ analysis.id }}">
+                                        <div class="card card-body">
+                                            <pre class="mb-0"><code>{{ analysis.results_json|tojson(indent=2) }}</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i data-feather="info"></i> No analyses have been performed on this compound yet.
+            <a href="{{ url_for('analyze_compound', id=compound.id) }}" class="alert-link">Run an analysis now</a>.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/molecular_viewer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/data_visualization.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize structure views
+        const smiles = '{{ compound.smiles }}';
+        
+        // Toggle between 2D and 3D views
+        const view2dBtn = document.getElementById('view-2d');
+        const view3dBtn = document.getElementById('view-3d');
+        const structure2d = document.getElementById('structure-2d');
+        const structure3d = document.getElementById('structure-3d');
+        
+        // Start with 2D view
+        structure3d.style.display = 'none';
+        
+        view2dBtn.addEventListener('click', function() {
+            structure2d.style.display = 'block';
+            structure3d.style.display = 'none';
+            view2dBtn.classList.add('active');
+            view3dBtn.classList.remove('active');
+        });
+        
+        view3dBtn.addEventListener('click', function() {
+            structure2d.style.display = 'none';
+            structure3d.style.display = 'block';
+            view2dBtn.classList.remove('active');
+            view3dBtn.classList.add('active');
+            
+            // Display the embedded MolView iframe (no initialization needed)
+            if (!structure3d.dataset.initialized) {
+                structure3d.dataset.initialized = 'true';
+            }
+        });
+        
+        // Initialize visualizations for analysis results
+        {% for analysis in analyses %}
+            {% if analysis.analysis_type == 'ADMET Prediction' and analysis.results_json %}
+                createAdmetRadarChart('admet-radar-{{ analysis.id }}', {{ analysis.results_json|safe }});
+            {% endif %}
+            
+            {% if analysis.analysis_type == 'Binding Prediction' and analysis.binding_affinity %}
+                createBindingVisualization('binding-visualization-{{ analysis.id }}', {{ analysis.binding_affinity }});
+            {% endif %}
+        {% endfor %}
+        
+        // Helper for copying to clipboard
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Copied to clipboard!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        };
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Compound Screening - Drug Discovery Platform{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Compound Screening</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>Compound Screening and Ranking</h1>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Screening Parameters</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('compound_screening') }}">
+                    <div class="mb-3">
+                        <label for="disease" class="form-label">Disease Target</label>
+                        <select class="form-select" id="disease" name="disease_id" required>
+                            <option value="">Select a Disease</option>
+                            {% for disease in diseases %}
+                            <option value="{{ disease.id }}" {% if selected_disease and selected_disease.id == disease.id %}selected{% endif %}>
+                                {{ disease.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="property_filter" class="form-label">Additional Filters</label>
+                        <select class="form-select" id="property_filter" name="property_filter">
+                            <option value="" {% if not property_filter %}selected{% endif %}>No additional filters</option>
+                            <option value="lipinski" {% if property_filter == 'lipinski' %}selected{% endif %}>Comply with Lipinski's Rule of Five</option>
+                            <option value="low_toxicity" {% if property_filter == 'low_toxicity' %}selected{% endif %}>Low Toxicity Compounds</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i data-feather="filter"></i> Screen Compounds
+                    </button>
+                </form>
+            </div>
+            
+            {% if selected_disease %}
+            <div class="card-footer">
+                <h6>Selected Disease: {{ selected_disease.name }}</h6>
+                <p class="text-muted small mb-0">{{ selected_disease.description|truncate(100) }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        {% if compounds %}
+            <div class="card">
+                <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Potential Compounds ({{ compounds|length }})</h5>
+                    <span class="badge bg-info">
+                        Filter: {{ property_filter|replace('_', ' ')|capitalize if property_filter else 'None' }}
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Compound</th>
+                                    <th>Structure</th>
+                                    <th>Binding Score</th>
+                                    <th>Target</th>
+                                    <th>Properties</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in compounds %}
+                                <tr>
+                                    <td class="align-middle">#{{ loop.index }}</td>
+                                    <td class="align-middle">
+                                        <strong>{{ item.compound.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ item.compound.molecular_formula }}</small>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <div class="structure-thumbnail" data-smiles="{{ item.compound.smiles }}" style="width: 100px; height: 70px;">
+                                            <!-- Structure will be rendered via JavaScript -->
+                                        </div>
+                                    </td>
+                                    <td class="align-middle">
+                                        <div class="progress" style="height: 25px;">
+                                            <div class="progress-bar {% if item.score > 0.7 %}bg-success{% elif item.score > 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ (item.score * 100)|int }}%;" 
+                                                aria-valuenow="{{ (item.score * 100)|int }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ (item.score * 100)|int }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle">{{ item.target.name }}</td>
+                                    <td class="align-middle">
+                                        <small>
+                                            MW: {{ item.compound.molecular_weight|round(1) }}<br>
+                                            LogP: {{ item.compound.logp|round(2) }}<br>
+                                            HBA/HBD: {{ item.compound.hba }}/{{ item.compound.hbd }}
+                                        </small>
+                                    </td>
+                                    <td class="align-middle">
+                                        <a href="{{ url_for('compound_details', id=item.compound.id) }}" class="btn btn-sm btn-outline-primary">
+                                            Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% elif selected_disease %}
+            <div class="alert alert-info">
+                <i data-feather="info"></i> No compounds found for the selected disease with the current filters.
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center p-5">
+                        <i data-feather="filter" style="width: 48px; height: 48px;"></i>
+                        <h3 class="mt-3">Compound Screening</h3>
+                        <p class="text-muted">
+                            Select a disease target from the form on the left to screen compounds with promising activity.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/molecular_viewer.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Render structure thumbnails
+        const thumbnails = document.querySelectorAll('.structure-thumbnail');
+        thumbnails.forEach(function(element) {
+            const smiles = element.dataset.smiles;
+            if (smiles) {
+                try {
+                    drawStructureThumbnail(element, smiles, 100, 70);
+                } catch (e) {
+                    console.error('Error rendering structure:', e);
+                    element.innerHTML = '<div class="alert alert-warning p-1 m-0 text-center"><small>Structure Error</small></div>';
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

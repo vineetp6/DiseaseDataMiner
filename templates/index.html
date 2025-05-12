@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Drug Discovery Platform for Neglected Diseases{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-0 bg-dark-subtle">
+            <div class="card-body">
+                <h1 class="card-title mb-3">AI-Driven Drug Discovery for Neglected Diseases</h1>
+                <p class="card-text lead">
+                    Welcome to our platform that leverages artificial intelligence to accelerate drug discovery for neglected tropical diseases. 
+                    Our mission is to help researchers identify promising drug candidates for diseases that affect billions worldwide but receive 
+                    insufficient research attention.
+                </p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('search') }}" class="btn btn-primary">
+                        <i data-feather="search"></i> Search Compounds
+                    </a>
+                    <a href="{{ url_for('target_identification') }}" class="btn btn-success">
+                        <i data-feather="target"></i> Target Identification
+                    </a>
+                    <a href="{{ url_for('compound_screening') }}" class="btn btn-info">
+                        <i data-feather="filter"></i> Compound Screening
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-warning">
+                        <i data-feather="bar-chart-2"></i> Dashboard
+                    </a>
+                    <a href="#about" class="btn btn-outline-secondary">
+                        <i data-feather="info"></i> Learn More
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="display-4 text-primary mb-2">{{ compound_count }}</div>
+                <h5 class="card-title">Compounds</h5>
+                <p class="card-text text-muted">Chemical compounds in database</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="display-4 text-success mb-2">{{ disease_count }}</div>
+                <h5 class="card-title">Diseases</h5>
+                <p class="card-text text-muted">Neglected diseases tracked</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="display-4 text-info mb-2">{{ target_count }}</div>
+                <h5 class="card-title">Targets</h5>
+                <p class="card-text text-muted">Biological targets analyzed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="display-4 text-warning mb-2">{{ analysis_count }}</div>
+                <h5 class="card-title">Analyses</h5>
+                <p class="card-text text-muted">AI predictions performed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-12">
+        <h2>Recent Compounds</h2>
+        {% if recent_compounds %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Formula</th>
+                        <th>MW</th>
+                        <th>LogP</th>
+                        <th>Disease Target</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for compound in recent_compounds %}
+                    <tr>
+                        <td>{{ compound.name }}</td>
+                        <td>{{ compound.molecular_formula }}</td>
+                        <td>{{ compound.molecular_weight }}</td>
+                        <td>{{ compound.logp }}</td>
+                        <td>{{ compound.disease_target }}</td>
+                        <td>
+                            <a href="{{ url_for('compound_details', id=compound.id) }}" class="btn btn-sm btn-outline-info">
+                                <i data-feather="eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            No compounds in the database yet.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="about" class="row mb-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">About this Platform</h2>
+            </div>
+            <div class="card-body">
+                <h4>What are Neglected Diseases?</h4>
+                <p>
+                    Neglected tropical diseases (NTDs) are a diverse group of conditions that affect more than a billion people 
+                    worldwide, primarily in low-income populations in tropical and subtropical regions. Despite their significant 
+                    impact, these diseases often receive limited attention and research funding compared to other health issues.
+                </p>
+                
+                <h4>Our Approach</h4>
+                <p>
+                    This platform leverages advanced computational methods and artificial intelligence to accelerate the discovery 
+                    of potential drug candidates for neglected diseases. Our approach includes:
+                </p>
+                <ul>
+                    <li>Machine learning models to predict binding affinity to disease targets</li>
+                    <li>ADMET property prediction to assess drug-likeness</li>
+                    <li>Molecular visualization for structure-based analysis</li>
+                    <li>Integration of biological and chemical data</li>
+                </ul>
+                
+                <h4>How to Use this Platform</h4>
+                <p>
+                    Researchers can use this platform to:
+                </p>
+                <ol>
+                    <li>Search for compounds by chemical structure, properties, or disease target</li>
+                    <li>Identify and validate potential drug targets for specific diseases</li>
+                    <li>Screen and rank compounds based on binding affinity and other properties</li>
+                    <li>Analyze compounds for their potential effectiveness against neglected diseases</li>
+                    <li>Visualize molecular structures in both 2D and 3D representations</li>
+                    <li>Access predictive analytics through the interactive dashboard</li>
+                    <li>Evaluate ADMET properties and binding affinities through AI-driven predictions</li>
+                </ol>
+                
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('search') }}" class="btn btn-lg btn-primary">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card bg-dark-subtle">
+            <div class="card-body text-center">
+                <h3>Target Diseases</h3>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+                    {% for disease in ["Malaria", "Tuberculosis", "Chagas Disease", "Leishmaniasis", "Schistosomiasis", "Dengue Fever", "African Trypanosomiasis", "Leprosy", "Buruli Ulcer", "Filariasis"] %}
+                    <span class="badge bg-secondary p-2">{{ disease }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // This would include dashboard-specific visualization code if needed
+</script>
+{% endblock %}

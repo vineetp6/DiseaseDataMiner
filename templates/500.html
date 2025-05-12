@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Server Error - Drug Discovery Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card text-center mb-4">
+            <div class="card-body py-5">
+                <div class="display-1 text-danger mb-4">
+                    <i data-feather="alert-triangle" class="mb-3" stroke-width="1" width="80" height="80"></i>
+                    <h1>500</h1>
+                </div>
+                <h1 class="h3 mb-4">Server Error</h1>
+                <p class="text-muted mb-4">
+                    We're experiencing some difficulties on our servers. 
+                    Please try again later or contact support if the problem persists.
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i data-feather="home" class="me-1"></i> Go to Home
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-1"></i> Go Back
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card bg-dark-subtle">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">Technical Information</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    This error has been logged and will be reviewed by our development team. 
+                    If you need immediate assistance, please include the following information:
+                </p>
+                <div class="bg-dark p-3 rounded mb-3">
+                    <code>
+                        Request ID: {{ request.environ.get('REQUEST_ID', 'Not available') }}<br>
+                        
+                        Path: {{ request.path }}
+                    </code>
+                </div>
+                <p class="text-muted small">
+                    Common causes of this error include heavy server load, database connectivity issues, 
+                    or an error in processing your request. For molecular analysis operations, this could be 
+                    related to invalid SMILES strings or unsupported chemical structures.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

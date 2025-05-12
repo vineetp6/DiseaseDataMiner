@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Compounds - Drug Discovery Platform{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Search Compounds</h1>
+        <p class="text-muted">
+            Search for compounds by name, structure (SMILES), formula, or disease target.
+        </p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <form action="{{ url_for('search') }}" method="get" class="row g-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="query" id="search-query" placeholder="Search by name, SMILES, formula..." value="{{ query }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i data-feather="search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-end">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#advancedSearch">
+                                    Advanced Filters <i data-feather="chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12 collapse" id="advancedSearch">
+                        <div class="card mt-3">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="disease-target" class="form-label">Disease Target</label>
+                                        <select class="form-select" id="disease-target" name="disease_target">
+                                            <option value="">Any</option>
+                                            <option value="Malaria">Malaria</option>
+                                            <option value="Tuberculosis">Tuberculosis</option>
+                                            <option value="Chagas">Chagas Disease</option>
+                                            <option value="Leishmaniasis">Leishmaniasis</option>
+                                            <option value="Schistosomiasis">Schistosomiasis</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="mw-min" class="form-label">MW Range</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="mw-min" name="mw_min" placeholder="Min" step="0.1">
+                                            <span class="input-group-text">-</span>
+                                            <input type="number" class="form-control" id="mw-max" name="mw_max" placeholder="Max" step="0.1">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="logp-min" class="form-label">LogP Range</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="logp-min" name="logp_min" placeholder="Min" step="0.1">
+                                            <span class="input-group-text">-</span>
+                                            <input type="number" class="form-control" id="logp-max" name="logp_max" placeholder="Max" step="0.1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        {% if compounds.items %}
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <p class="mb-0">Showing {{ compounds.items|length }} of {{ compounds.total }} results</p>
+                <div class="d-flex align-items-center">
+                    <label for="per-page-select" class="me-2">Compounds per page:</label>
+                    <form id="per-page-form" action="{{ url_for('search') }}" method="get" class="d-flex">
+                        <input type="hidden" name="query" value="{{ query }}">
+                        <select id="per-page-select" name="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="20" {% if request.args.get('per_page', '20') == '20' %}selected{% endif %}>20</option>
+                            <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50</option>
+                            <option value="100" {% if request.args.get('per_page') == '100' %}selected{% endif %}>100</option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Structure</th>
+                            <th>Formula</th>
+                            <th>MW</th>
+                            <th>LogP</th>
+                            <th>Disease Target</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for compound in compounds.items %}
+                        <tr>
+                            <td>{{ compound.name }}</td>
+                            <td>
+                                <div class="structure-thumbnail" data-smiles="{{ compound.smiles }}">
+                                    <!-- Structure will be displayed via JavaScript -->
+                                </div>
+                            </td>
+                            <td>{{ compound.molecular_formula }}</td>
+                            <td>{{ compound.molecular_weight }}</td>
+                            <td>{{ compound.logp }}</td>
+                            <td>{{ compound.disease_target }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('compound_details', id=compound.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="eye"></i> Details
+                                    </a>
+                                    <a href="{{ url_for('analyze_compound', id=compound.id) }}" class="btn btn-sm btn-outline-info">
+                                        <i data-feather="activity"></i> Analyze
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if compounds.pages > 1 %}
+            <nav aria-label="Compound search results pages">
+                <ul class="pagination justify-content-center">
+                    {% if compounds.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('search', query=query, page=compounds.prev_num, per_page=request.args.get('per_page', 20)) }}">Previous</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in compounds.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == compounds.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('search', query=query, page=page_num, per_page=request.args.get('per_page', 20)) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if compounds.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('search', query=query, page=compounds.next_num, per_page=request.args.get('per_page', 20)) }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+        {% else %}
+            {% if query %}
+                <div class="alert alert-info">
+                    <i data-feather="info"></i> No compounds found matching your search criteria.
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">
+                    <i data-feather="search"></i> Enter search terms to find compounds.
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/molecular_viewer.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Draw structure thumbnails
+        document.querySelectorAll('.structure-thumbnail').forEach(function(element) {
+            const smiles = element.getAttribute('data-smiles');
+            if (smiles) {
+                drawStructureThumbnail(element, smiles, 100, 80);
+            }
+        });
+    });
+</script>
+{% endblock %}
